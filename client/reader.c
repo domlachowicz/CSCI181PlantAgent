@@ -16,6 +16,34 @@ struct ImageClassification {
   }
 };
 
+void print_weka_data(const vector<ImageClassification>& classifications) {
+  printf("@relation plants\n");
+  printf("\n");
+  
+  for (int x = 0; x < 6; x++) {
+    for (int y = 0; y < 6; y++) {
+      printf("@attribute\t%d_%d\t{0, 1}\n", x, y);
+    }
+  }
+  printf("@attribute\tclass\t{poisonous, nutritious}\n\n");
+  printf("@data\n\n");
+  for (int i = 0; i < classifications.size(); i++) {
+    const ImageClassification& ic = classifications[i];
+    for (int x = 0; x < 6; x++) {
+      if (x != 0) {
+	printf(",");
+      }
+      for (int y = 0; y < 6; y++) {
+	if (y != 0) {
+	  printf(",");
+	}
+	printf("%d", ic.image[x][y]);
+      }
+    }    
+    printf(",%s\n", (ic.nutritious ? "nutritious" : "poisonous"));
+  }
+}
+
 int main(int argc, char ** argv) {
   char line[1024];
   int a, b, c, d, e, f;
@@ -46,6 +74,7 @@ int main(int argc, char ** argv) {
     }
   }
 
-  printf("Got %d images\n", classifications.size());
+  print_weka_data(classifications);
+  //printf("Got %d images\n", classifications.size());
 }
  
