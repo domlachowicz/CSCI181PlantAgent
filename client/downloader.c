@@ -43,7 +43,8 @@ main (int argc, char **argv)
   // Loop as long as the player is alive
   while (alive (sock))
     {
-      int move = rand () % 4;
+      fflush(stdout);
+      int move = rand () % 6;
       switch (get_plant_type (sock))
 	{
 	case NO_PLANT:
@@ -53,62 +54,64 @@ main (int argc, char **argv)
 	  break;
 
 	case NUTRITIOUS_PLANT:
-	  printf ("nutritious\n");
+	  //printf ("nutritious\n");
 	  break;
 
 	case POISONOUS_PLANT:
-	  printf ("poisonous\n");
+	  //printf ("poisonous\n");
 	  break;
 	}
 
-      if (0 == move)
-	{
-	  move_up (sock);
-	}
-      else if (1 == move)
-	{
-	  move_down (sock);
-	}
-      else if (2 == move)
-	{
-	  move_left (sock);
-	}
-      else if (3 == move)
-	{
-	  move_right (sock);
-	}
+      switch (move) {
+      case 0:
+	move_up(sock);
+	break;
+      case 1:
+	move_down(sock);
+	break;
+      case 2:
+      case 5:
+	move_left(sock);
+	break;
+      case 3:
+      case 4:
+	move_right(sock);
+	break;
+      }
 
       switch (get_plant_type (sock))
 	{
 	case NO_PLANT:
 	  break;
 	default:
-	  print_plant_image (sock);
+	  //print_plant_image (sock);
+	  break;
 	}
 
       switch (eat_plant (sock))
 	{
 	case NO_PLANT_TO_EAT:
+	  //printf("no plant\n");
 	  break;
 
 	case PLANT_ALREADY_EATEN:
+	  //printf("already eaten\n");
 	  break;
 
 	case EAT_NUTRITIOUS_PLANT:
-	  printf ("nutritious 2\n");
+	  print_plant_image (sock);
+	  printf ("nutritious\n");
 	  break;
 
 	case EAT_POISONOUS_PLANT:
-	  printf ("poisonous 2\n");
+	  print_plant_image (sock);
+	  printf ("poisonous\n");
 	  break;
 	}
     }
 
   // Tell the server to end the game
   end_game (sock);
-
-  // Print a message for the user
-  printf ("Player is dead: GAME OVER!\n\n");
 }
 
 // parse_input
@@ -152,7 +155,6 @@ print_plant_image (int sock)
     }
   else
     {
-      printf ("Plant image:\n");
       for (row = 0; row < IMAGE_SIZE; row++)
 	{
 	  for (col = 0; col < IMAGE_SIZE; col++)
