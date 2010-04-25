@@ -1,0 +1,12 @@
+CS181 final project release:
+
+client/player.{c,py} -- the provided interactive player.  You should
+                        modify/create a new player.
+shared/*             -- support code that you shouldn't need to change
+game-nice            -- binary for running the game on
+                        nice.fas.harvard.edu
+game-OSX             -- binary for running the game on OS X (intel)
+
+Run the game without arguments to see possible arguments.
+
+Good luck!
