@@ -4,6 +4,11 @@
  */
 
 #include "socklib.h"
+#include <stdlib.h>
+
+static void my_perror(const char *msg) {
+  exit(-1);
+}
 
 /* open_server_sock
  * ----------------
@@ -21,14 +26,14 @@ int open_server_sock(int port) {
   /* Open a socket */
   sock = socket(AF_INET, SOCK_STREAM, 0);
   if(sock < 0) {
-    perror("open_server_sock: error opening socket");
+    my_perror("open_server_sock: error opening socket");
 	return -1;
   }
 
   /* Set the REUSE_PORT socket option */
   if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, 
   (char *) &on, sizeof(on)) < 0) {
-    perror("setsockopt");
+    my_perror("setsockopt");
   }    
 
   /* Initialize the socket address struct */
@@ -39,7 +44,7 @@ int open_server_sock(int port) {
 
   /* Bind the socket to the specified port */
   if(bind(sock, (struct sockaddr*) &addr, sizeof(addr)) < 0) {
-    perror("open_server_sock: bind");
+    my_perror("open_server_sock: bind");
 	return -1;
   }
 
@@ -65,7 +70,7 @@ int accept_connection(int sock) {
   /* Accept a connection */
   client = accept(sock, (struct sockaddr *) &addr, &addr_len);
   if(client < 0) {
-    perror("accept_connection: accept failed");
+    my_perror("accept_connection: accept failed");
 	return -1;
   }
 
@@ -85,7 +90,7 @@ int open_client_sock(char *hostname, int port) {
   /* Open a socket */
   sock = socket(AF_INET, SOCK_STREAM, 0);
   if(sock < 0) {
-    perror("open_client_sock: error opening socket");
+    my_perror("open_client_sock: error opening socket");
 	return -1;
   }
 
@@ -104,7 +109,7 @@ int open_client_sock(char *hostname, int port) {
 
   /* Connect to the server */
   if(connect(sock, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
-    perror("open_client_sock: can't connect");
+    my_perror("open_client_sock: can't connect");
     return -1;
   }
 
@@ -117,7 +122,7 @@ int open_client_sock(char *hostname, int port) {
  */
 void close_sock(int sock) {
   if(close(sock) != 0) {
-    perror ("close_sock: close failed");
+    my_perror ("close_sock: close failed");
   }
 }
 
@@ -165,7 +170,7 @@ int read_data(int sock, void *buff, int len, int timewait) {
 
 	/* Signal an error */
 	} else {
-	  perror("read_data: error on read");
+	  my_perror("read_data: error on read");
 	  return -1;
 	}
   }
@@ -189,7 +194,7 @@ int write_data(int sock, void *buff, int len) {
 
     /* Signal an error */
 	} else {
-	  perror("write_data: error on write");
+	  my_perror("write_data: error on write");
 	  return -1;
 	}
   }
