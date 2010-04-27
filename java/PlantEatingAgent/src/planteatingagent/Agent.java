@@ -46,19 +46,19 @@ public class Agent {
     }
 
     public void moveUp() throws Exception {
-        write_and_read_bool(Command.MOVE_UP);
+        write_int(Command.MOVE_UP);
     }
 
     public void moveLeft() throws Exception {
-        write_and_read_bool(Command.MOVE_LEFT);
+        write_int(Command.MOVE_LEFT);
     }
 
     public void moveDown() throws Exception {
-        write_and_read_bool(Command.MOVE_DOWN);
+        write_int(Command.MOVE_DOWN);
     }
 
     public void moveRight() throws Exception {
-        write_and_read_bool(Command.MOVE_RIGHT);
+        write_int(Command.MOVE_RIGHT);
     }
 
     public PlantEatingResult eatPlant() throws Exception {
