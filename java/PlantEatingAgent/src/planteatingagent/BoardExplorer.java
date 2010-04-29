@@ -5,22 +5,33 @@ import java.io.*;
 
 public class BoardExplorer {
 
+    private static int BOARD_SIZE = 100;
+
     public static void main(String[] args) {
         List<Image> images = new ArrayList<Image>();
         PrintStream board_map_file = null;
         PrintStream image_classifications_file = null;
+        char[][] board = new char[BOARD_SIZE][BOARD_SIZE];
+        for (int x = 0; x < BOARD_SIZE; x++) {
+            for (int y = 0; y < BOARD_SIZE; y++) {
+                board[x][y] = 'x';
+            }
+        }
 
         try {
             String server = "localhost";
             int port = 2000;
 
             Agent agent = new Agent(server, port);
+            Random r = new Random();
 
-            board_map_file = new PrintStream(new FileOutputStream("board_map.txt"));
-            image_classifications_file = new PrintStream(new FileOutputStream("image_classifications.arff"));
+            int my_key = r.nextInt();
+
+            board_map_file = new PrintStream(new FileOutputStream(String.format("board_map_%d.txt", my_key)));
+            image_classifications_file = new PrintStream(new FileOutputStream(String.format("image_classifications_%d.arff", my_key)));
 
             while (agent.isAlive()) {
-                int move = (int) Math.floor(6 * Math.random());
+                int move = r.nextInt(5);
 
                 if (0 == move) {
                     agent.moveUp();
@@ -32,28 +43,32 @@ public class BoardExplorer {
                     agent.moveRight();
                 }
 
+                int x = agent.getX() + (BOARD_SIZE / 2);
+                int y = agent.getY() + (BOARD_SIZE / 2);
+
                 PlantType plantType = agent.getPlantType();
-                //if (!(PlantType.UNKNOWN_SQUARE == plantType || PlantType.NO_PLANT == plantType)) {
                 if (PlantType.UNKNOWN_PLANT == plantType) {
                     Image image = agent.getPlantImage();
                     images.add(image);
 
-                    if (PlantType.UNKNOWN_PLANT == plantType) {
-                        switch (agent.eatPlant()) {
-                            case EAT_NUTRITIOUS_PLANT:
-                                image.setClassification(PlantType.NUTRITIOUS_PLANT);
-                                break;
+                    switch (agent.eatPlant()) {
+                        case EAT_NUTRITIOUS_PLANT:
+                            board[x][y] = 'N';
+                            image.setClassification(PlantType.NUTRITIOUS_PLANT);
+                            break;
 
-                            case EAT_POISONOUS_PLANT:
-                                image.setClassification(PlantType.POISONOUS_PLANT);
-                                images.add(image);
-                                break;
-                        }
-                    } else {
-                        // either PlantType.NUTRITIOUS_PLANT or PlantType.POISONOUS_PLANT
-                        // someone else already ate it. add to our classifications
-                        image.setClassification(plantType);
+                        case EAT_POISONOUS_PLANT:
+                            board[x][y] = 'P';
+                            image.setClassification(PlantType.POISONOUS_PLANT);
+                            images.add(image);
+                            break;
                     }
+                } else if (PlantType.POISONOUS_PLANT == plantType) {
+                    board[x][y] = 'P';
+                } else if (PlantType.NUTRITIOUS_PLANT == plantType) {
+                    board[x][y] = 'N';
+                } else {
+                    board[x][y] = ' ';
                 }
             }
         } catch (Exception ex) {
@@ -63,6 +78,14 @@ public class BoardExplorer {
             ImageArffWriter.writeArffFile(images, image_classifications_file);
 
             image_classifications_file.close();
+
+            for (int x = 0; x < BOARD_SIZE; x++) {
+                for (int y = 0; y < BOARD_SIZE; y++) {
+                    board_map_file.append(board[x][y]);
+                }
+                board_map_file.println();
+            }
+
             board_map_file.close();
         }
     }
