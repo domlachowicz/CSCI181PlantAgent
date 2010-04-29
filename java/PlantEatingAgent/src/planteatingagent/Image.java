@@ -1,4 +1,5 @@
 package planteatingagent;
+import weka.core.Instance;
 
 public class Image {
 
@@ -54,6 +55,22 @@ public class Image {
         sb.append("\n");
 
         return sb.toString();
+    }
+
+    public Instance toInstance() {
+        Instance instance = new Instance((IMAGE_SIZE * IMAGE_SIZE) + 1);
+
+        int i = 0;
+        for (int x = 0; x < IMAGE_SIZE; x++) {
+            for (int y = 0; y < IMAGE_SIZE; y++) {
+                instance.setValue(i, image[x][y]);
+                i++;
+            }
+        }
+
+        instance.setValue(i, classification.toString());
+
+        return instance;
     }
 
     @Override
