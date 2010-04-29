@@ -51,7 +51,7 @@ public class Image {
             }
         }
 
-        sb.append(classification.toString());
+        sb.append(",").append(classification.toString());
 
         return sb.toString();
     }
