@@ -52,7 +52,6 @@ public class Image {
         }
 
         sb.append(classification.toString());
-        sb.append("\n");
 
         return sb.toString();
     }
