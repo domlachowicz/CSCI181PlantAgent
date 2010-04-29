@@ -16,4 +16,22 @@ public enum PlantType {
     public int getValue() {
         return value;
     }
+
+    @Override
+    public String toString()  {
+        switch (value) {
+            case 0:
+                return "no plant";
+            case 1:
+                return "unknown square";
+            case 2:
+                return "unknown plant";
+            case 3:
+                return "nutritious";
+            case 4:
+                return "poisonous";
+            default:
+                throw new IllegalArgumentException();
+        }
+    }
 }
