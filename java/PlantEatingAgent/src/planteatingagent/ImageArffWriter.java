@@ -1,11 +1,11 @@
 package planteatingagent;
 
-import java.io.PrintWriter;
+import java.io.PrintStream;
 import java.util.Collection;
 
 public class ImageArffWriter {
 
-    public static void writeArffFile(Collection<Image> images, PrintWriter out) {
+    public static void writeArffFile(Collection<Image> images, PrintStream out) {
         out.println("@relation plants");
         out.println();
 
