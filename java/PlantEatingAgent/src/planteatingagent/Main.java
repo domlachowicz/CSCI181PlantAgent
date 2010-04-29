@@ -14,17 +14,10 @@ class Main {
     }
 
     private static void print_plant_image(Agent agent, PrintStream out) throws Exception {
-        int row, col;
-        int image[][] = agent.getPlantImage();
+        Image image = agent.getPlantImage();
 
         out.println("Plant image:");
-        for (row = 0; row < Agent.IMAGE_SIZE; row++) {
-            for (col = 0; col < Agent.IMAGE_SIZE; col++) {
-                out.format("%3d", image[row][col]);
-            }
-
-            out.println();
-        }
+        out.println(image.toString());
     }
 
     public static void main(String[] args) {

@@ -95,7 +95,7 @@ public class Agent {
         }
     }
 
-    public int[][] getPlantImage() throws Exception {
+    public Image getPlantImage() throws Exception {
         int[][] image = new int[IMAGE_SIZE][IMAGE_SIZE];
 
         write_int(Command.GET_PLANT_IMAGE);
@@ -107,7 +107,7 @@ public class Agent {
             }
         }
 
-        return image;
+        return new Image(image);
     }
 
     public int getLife() throws Exception {
