@@ -5,7 +5,7 @@ import java.io.*;
 
 public class BoardExplorer {
 
-    private static int BOARD_SIZE = 100;
+    private static int BOARD_SIZE = 1000;
 
     public static void main(String[] args) {
         List<Image> images = new ArrayList<Image>();
