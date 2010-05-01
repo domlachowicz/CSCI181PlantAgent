@@ -5,7 +5,7 @@ import java.io.*;
 
 public class BoardExplorer {
 
-    private static int BOARD_SIZE = 100;
+    private static int BOARD_SIZE = 10000;
 
     public static void main(String[] args) {
         List<Image> images = new ArrayList<Image>();
@@ -31,7 +31,7 @@ public class BoardExplorer {
             image_classifications_file = new PrintStream(new FileOutputStream(String.format("image_classifications_%d.arff", my_key)));
 
             while (agent.isAlive()) {
-                int move = r.nextInt(5);
+                int move = r.nextInt(6);
 
                 if (0 == move) {
                     agent.moveUp();
@@ -72,8 +72,8 @@ public class BoardExplorer {
                 }
             }
         } catch (Exception ex) {
-            // System.err.println(ex.getMessage());
-            // ex.printStackTrace(System.err);
+             System.err.println(ex.getMessage());
+             ex.printStackTrace(System.err);
         } finally {
             ImageArffWriter.writeArffFile(images, image_classifications_file);
 
