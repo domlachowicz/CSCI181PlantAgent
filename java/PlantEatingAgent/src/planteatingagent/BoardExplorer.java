@@ -5,7 +5,7 @@ import java.io.*;
 
 public class BoardExplorer {
 
-    private static int BOARD_SIZE = 10000;
+    private static int BOARD_SIZE = 1000;
 
     public static void main(String[] args) {
         List<Image> images = new ArrayList<Image>();
@@ -17,6 +17,8 @@ public class BoardExplorer {
                 board[x][y] = 'X';
             }
         }
+		Classifier classifier = new Classifier();
+		classifier.readFromDisk();
 
         try {
             String server = "localhost";
@@ -29,20 +31,12 @@ public class BoardExplorer {
 
             board_map_file = new PrintStream(new FileOutputStream(String.format("board_map_%d.txt", my_key)));
             image_classifications_file = new PrintStream(new FileOutputStream(String.format("image_classifications_%d.arff", my_key)));
+            int radius = 1;
+            int left, right, down, up;
+
+            left = right = down = up = radius;
 
             while (agent.isAlive()) {
-                int move = r.nextInt(6);
-
-                if (0 == move) {
-                    agent.moveUp();
-                } else if (1 == move || 4 == move) {
-                    agent.moveDown();
-                } else if (2 == move) {
-                    agent.moveLeft();
-                } else if (3 == move || 5 == move) {
-                    agent.moveRight();
-                }
-
                 int x = agent.getX() + (BOARD_SIZE / 2);
                 int y = agent.getY() + (BOARD_SIZE / 2);
 
@@ -50,19 +44,22 @@ public class BoardExplorer {
                 if (PlantType.UNKNOWN_PLANT == plantType) {
                     Image image = agent.getPlantImage();
                     images.add(image);
+					PlantType classifiedObservation = classifier.classifyInstance(image.toInstance());
+					if (classifiedObservation == PlantType.NUTRITIOUS_PLANT) {
+						PlantEatingResult eatenPlant = agent.eatPlant();
+						switch (eatenPlant) {
+							case EAT_NUTRITIOUS_PLANT:
+								board[x][y] = 'N';
+								image.setClassification(PlantType.NUTRITIOUS_PLANT);
+								break;
 
-                    switch (agent.eatPlant()) {
-                        case EAT_NUTRITIOUS_PLANT:
-                            board[x][y] = 'N';
-                            image.setClassification(PlantType.NUTRITIOUS_PLANT);
-                            break;
-
-                        case EAT_POISONOUS_PLANT:
-                            board[x][y] = 'P';
-                            image.setClassification(PlantType.POISONOUS_PLANT);
-                            images.add(image);
-                            break;
-                    }
+							case EAT_POISONOUS_PLANT:
+								board[x][y] = 'P';
+								image.setClassification(PlantType.POISONOUS_PLANT);
+								images.add(image);
+								break;
+						}
+					}
                 } else if (PlantType.POISONOUS_PLANT == plantType) {
                     board[x][y] = 'P';
                 } else if (PlantType.NUTRITIOUS_PLANT == plantType) {
@@ -70,10 +67,28 @@ public class BoardExplorer {
                 } else {
                     board[x][y] = ' ';
                 }
+
+                // attempt to move in concentric circles
+                if (left > 0) {
+                    agent.moveLeft();
+                    left--;
+                } else if (down > 0) {
+                    agent.moveDown();
+                    down--;
+                } else if (right > 0) {
+                    agent.moveRight();
+                    right--;
+                } else if (up > 0) {
+                    agent.moveUp();
+                    up--;
+                } else {
+                    radius++;
+                    left = right = down = up = radius;
+                }
             }
         } catch (Exception ex) {
-             System.err.println(ex.getMessage());
-             ex.printStackTrace(System.err);
+            // System.err.println(ex.getMessage());
+            // ex.printStackTrace(System.err);
         } finally {
             ImageArffWriter.writeArffFile(images, image_classifications_file);
 
