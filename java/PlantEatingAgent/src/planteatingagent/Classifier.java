@@ -23,20 +23,23 @@ public class Classifier {
     public Classifier() {
     }
 
+    private void loadDataSet() throws Exception {
+        DataSource source = new DataSource(Classifier.class.getResourceAsStream(DATA_FILE));
+        data = source.getDataSet();
+        if (data.classIndex() == -1) {
+            data.setClassIndex(data.numAttributes() - 1);
+        }
+    }
+
     public void createNewClassifier() {
         try {
             classifier = new Bagging();
             classifier.setClassifier(new Id3());
-            DataSource source = new DataSource(Classifier.class.getResourceAsStream(DATA_FILE));
-            data = source.getDataSet();
-            if (data.classIndex() == -1) {
-                data.setClassIndex(data.numAttributes() - 1);
-            }
+            loadDataSet();
         } catch (Exception ex) {
             System.err.println(ex.getMessage());
             ex.printStackTrace(System.err);
         }
-
     }
 
     public Instances getDataSet() {
@@ -79,7 +82,8 @@ public class Classifier {
     public void saveToDisk() {
         try {
             // serialize model
-            SerializationHelper.write(MODEL_FILE, classifier);
+            Instances header = new Instances(data, 0);
+            SerializationHelper.writeAll(MODEL_FILE, new Object[]{classifier, header});
         } catch (Exception ex) {
             System.err.println(ex.getMessage());
             ex.printStackTrace(System.err);
@@ -88,8 +92,14 @@ public class Classifier {
 
     public void readFromDisk() {
         try {
-            //deserialize model
-            classifier = (Bagging) SerializationHelper.read(Classifier.class.getResourceAsStream(MODEL_FILE));
+            // deserialize model
+            Object o[] = SerializationHelper.readAll(Classifier.class.getResourceAsStream(MODEL_FILE));
+            classifier = (Bagging) o[0];
+            if (o.length > 1) {
+                data = (Instances) o[1];
+            } else {
+                loadDataSet();
+            }
         } catch (Exception ex) {
             System.err.println(ex.getMessage());
             ex.printStackTrace(System.err);
