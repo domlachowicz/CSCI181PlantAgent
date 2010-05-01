@@ -69,7 +69,7 @@ public class Image {
             }
         }
 
-        instance.setValue(i, classification.toString());
+        //instance.setValue(i, classification.toString());
 
         return instance;
     }
