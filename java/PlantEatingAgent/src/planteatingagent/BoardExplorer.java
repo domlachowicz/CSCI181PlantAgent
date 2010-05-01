@@ -17,8 +17,8 @@ public class BoardExplorer {
                 board[x][y] = 'X';
             }
         }
-		Classifier classifier = new Classifier();
-		classifier.readFromDisk();
+        Classifier classifier = new Classifier();
+        classifier.readFromDisk();
 
         try {
             String server = "localhost";
@@ -44,22 +44,22 @@ public class BoardExplorer {
                 if (PlantType.UNKNOWN_PLANT == plantType) {
                     Image image = agent.getPlantImage();
                     images.add(image);
-					PlantType classifiedObservation = classifier.classifyInstance(image.toInstance());
-					if (classifiedObservation == PlantType.NUTRITIOUS_PLANT) {
-						PlantEatingResult eatenPlant = agent.eatPlant();
-						switch (eatenPlant) {
-							case EAT_NUTRITIOUS_PLANT:
-								board[x][y] = 'N';
-								image.setClassification(PlantType.NUTRITIOUS_PLANT);
-								break;
+                    PlantType classifiedObservation = classifier.classifyInstance(image.toInstance(classifier.getDataSet()));
+                    if (classifiedObservation == PlantType.NUTRITIOUS_PLANT) {
+                        PlantEatingResult eatenPlant = agent.eatPlant();
+                        switch (eatenPlant) {
+                            case EAT_NUTRITIOUS_PLANT:
+                                board[x][y] = 'N';
+                                image.setClassification(PlantType.NUTRITIOUS_PLANT);
+                                break;
 
-							case EAT_POISONOUS_PLANT:
-								board[x][y] = 'P';
-								image.setClassification(PlantType.POISONOUS_PLANT);
-								images.add(image);
-								break;
-						}
-					}
+                            case EAT_POISONOUS_PLANT:
+                                board[x][y] = 'P';
+                                image.setClassification(PlantType.POISONOUS_PLANT);
+                                images.add(image);
+                                break;
+                        }
+                    }
                 } else if (PlantType.POISONOUS_PLANT == plantType) {
                     board[x][y] = 'P';
                 } else if (PlantType.NUTRITIOUS_PLANT == plantType) {
@@ -86,9 +86,9 @@ public class BoardExplorer {
                     left = right = down = up = radius;
                 }
             }
-        } catch (Exception ex) {
-            // System.err.println(ex.getMessage());
-            // ex.printStackTrace(System.err);
+        } catch (Throwable t) {
+            System.err.println(t.getMessage());
+            t.printStackTrace(System.err);
         } finally {
             ImageArffWriter.writeArffFile(images, image_classifications_file);
 
