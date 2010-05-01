@@ -8,6 +8,16 @@ public class BoardExplorer {
     private static int BOARD_SIZE = 1000;
 
     public static void main(String[] args) {
+		int port = 2000;
+		int reward;
+		int penalty;
+		int startingLife;
+		if (args.length == 4) {
+			port = Integer.parseInt(args[0]);
+			startingLife = Integer.parseInt(args[1]);
+			reward = Integer.parseInt(args[2]);
+			penalty = Integer.parseInt(args[3]);
+		}
         List<Image> images = new ArrayList<Image>();
         PrintStream board_map_file = null;
         PrintStream image_classifications_file = null;
@@ -18,11 +28,10 @@ public class BoardExplorer {
             }
         }
         Classifier classifier = new Classifier();
-        classifier.readFromDisk();
+		classifier.readFromDisk();
 
         try {
             String server = "localhost";
-            int port = 2000;
 
             Agent agent = new Agent(server, port);
             Random r = new Random();
