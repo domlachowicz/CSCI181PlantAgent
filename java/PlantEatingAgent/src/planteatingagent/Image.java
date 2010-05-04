@@ -86,4 +86,20 @@ public class Image {
 
         return sb.toString();
     }
+
+	@Override
+	public boolean equals(Object o) {
+		if (o instanceof Image) {
+			return o.toString().equals(this.toString());
+		} else {
+			throw new RuntimeException();
+		}
+	}
+
+	@Override
+	public int hashCode() {
+		int hash = 3;
+		hash = 89 * hash + (this.image != null ? this.image.hashCode() : 0);
+		return hash;
+	}
 }

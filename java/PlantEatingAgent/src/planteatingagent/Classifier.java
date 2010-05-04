@@ -2,6 +2,7 @@ package planteatingagent;
 
 import java.util.Random;
 import weka.classifiers.Evaluation;
+import weka.classifiers.functions.MultilayerPerceptron;
 import weka.classifiers.meta.Bagging;
 import weka.classifiers.trees.Id3;
 import weka.core.Instance;
@@ -16,8 +17,8 @@ import weka.core.converters.ConverterUtils.DataSource;
 public class Classifier {
 
     private Instances data;
-    private Bagging classifier;
-    private static final String MODEL_FILE = "data/baggingModel.model";
+    private weka.classifiers.Classifier classifier;
+    private static final String MODEL_FILE = "data/NNModel.model";
     private static final String DATA_FILE = "data/data.arff";
 
     public Classifier() {
@@ -33,8 +34,9 @@ public class Classifier {
 
     public void createNewClassifier() {
         try {
-            classifier = new Bagging();
-            classifier.setClassifier(new Id3());
+//            classifier = new Bagging();
+//            classifier.setClassifier(new Id3());
+			classifier = new MultilayerPerceptron();
             loadDataSet();
         } catch (Exception ex) {
             System.err.println(ex.getMessage());
@@ -62,8 +64,10 @@ public class Classifier {
 
     public PlantType classifyInstance(Instance i) {
         double classLabel = 0;
+		double[] distribution = null;
         try {
             classLabel = classifier.classifyInstance(i);
+			distribution = classifier.distributionForInstance(i);
         } catch (Exception ex) {
             System.err.println(ex.getMessage());
             ex.printStackTrace(System.err);
@@ -71,13 +75,40 @@ public class Classifier {
         i.setClassValue(classLabel);
 
         if (i.classAttribute().value((int) classLabel).equals("poisonous")) {
+			if (distribution != null) {
+				System.out.println("classified plant as poisonous with likelihood: "+distribution[0]);
+			}
             return PlantType.POISONOUS_PLANT;
         } else if (i.classAttribute().value((int) classLabel).equals("nutritious")) {
+			if (distribution != null) {
+				System.out.println("classified plant as nutritious with likelihood: "+distribution[1]);
+			}
             return PlantType.NUTRITIOUS_PLANT;
         } else {
             return PlantType.UNKNOWN_PLANT;
         }
     }
+
+	public PlantType classifyInstance(Instance i, double threshold) {
+		double[] distribution = null;
+		try {
+			distribution = classifier.distributionForInstance(i);
+		} catch (Exception ex) {
+			System.err.println(ex.getMessage());
+			ex.printStackTrace(System.err);
+		}
+
+		if (distribution != null) {
+			if (distribution[0] > threshold) {
+				return PlantType.POISONOUS_PLANT;
+			} else {
+				return PlantType.NUTRITIOUS_PLANT;
+			}
+		} else {
+			return PlantType.UNKNOWN_PLANT;
+		}
+
+	}
 
     public void saveToDisk() {
         try {
@@ -94,7 +125,7 @@ public class Classifier {
         try {
             // deserialize model
             Object o[] = SerializationHelper.readAll(Classifier.class.getResourceAsStream(MODEL_FILE));
-            classifier = (Bagging) o[0];
+            classifier = (weka.classifiers.Classifier) o[0];
             if (o.length > 1) {
                 data = (Instances) o[1];
             } else {
