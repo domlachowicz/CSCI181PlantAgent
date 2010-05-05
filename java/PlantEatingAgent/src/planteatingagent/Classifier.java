@@ -3,8 +3,8 @@ package planteatingagent;
 import java.util.Random;
 import weka.classifiers.Evaluation;
 import weka.classifiers.functions.MultilayerPerceptron;
-import weka.classifiers.meta.Bagging;
-import weka.classifiers.trees.Id3;
+import weka.classifiers.meta.ClassificationViaClustering;
+import weka.clusterers.SimpleKMeans;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.SerializationHelper;
@@ -18,10 +18,16 @@ public class Classifier {
 
 	private Instances data;
 	private weka.classifiers.Classifier classifier;
+	private ClassificationViaClustering classifier2;
 	private static final String MODEL_FILE = "data/NNModel.model";
+	private static final String MODEL_FILE2 = "data/clustererModel.model";
 	private static final String DATA_FILE = "data/data.arff";
+	private double priorNutritious;
+	private double priorPoisonous;
 
 	public Classifier() {
+		priorNutritious = 0.167;
+		priorPoisonous = 0.833;
 	}
 
 	private void loadDataSet() throws Exception {
@@ -34,9 +40,9 @@ public class Classifier {
 
 	public void createNewClassifier() {
 		try {
-//            classifier = new Bagging();
-//            classifier.setClassifier(new Id3());
 			classifier = new MultilayerPerceptron();
+			classifier2 = new ClassificationViaClustering();
+			classifier2.setClusterer(new SimpleKMeans());
 			loadDataSet();
 		} catch (Exception ex) {
 			System.err.println(ex.getMessage());
@@ -51,6 +57,7 @@ public class Classifier {
 	public void train() {
 		try {
 			classifier.buildClassifier(data);
+			classifier2.buildClassifier(data);
 		} catch (Exception ex) {
 			System.err.println(ex.getMessage());
 			ex.printStackTrace(System.err);
@@ -111,18 +118,24 @@ public class Classifier {
 
 	public double getDistribution(Instance i, PlantType type) {
 		double[] distribution = null;
+		double[] distribution2 = null;
+		double[] distributionFinal = null;
 		try {
 			distribution = classifier.distributionForInstance(i);
+			distribution2 = classifier2.distributionForInstance(i);
+			distributionFinal = new double[2];
+			distributionFinal[0] = Math.sqrt(distribution[0]*distribution2[0]);
+			distributionFinal[1] = Math.sqrt(distribution[1]*distribution2[1]);
 		} catch (Exception ex) {
 			System.err.println(ex.getMessage());
 			ex.printStackTrace(System.err);
 		}
 
-		if (distribution != null) {
+		if (distributionFinal != null) {
 			if (type.equals(PlantType.POISONOUS_PLANT)) {
-				return distribution[0];
+				return distributionFinal[0];
 			} else if (type.equals(PlantType.NUTRITIOUS_PLANT)) {
-				return distribution[1];
+				return distributionFinal[1];
 			}
 		}
 		return 0;
@@ -133,6 +146,7 @@ public class Classifier {
 			// serialize model
 			Instances header = new Instances(data, 0);
 			SerializationHelper.writeAll(MODEL_FILE, new Object[]{classifier, header});
+			SerializationHelper.writeAll(MODEL_FILE2, new Object[]{classifier2, header});
 		} catch (Exception ex) {
 			System.err.println(ex.getMessage());
 			ex.printStackTrace(System.err);
@@ -149,6 +163,9 @@ public class Classifier {
 			} else {
 				loadDataSet();
 			}
+			// deserialize model2
+			Object o2[] = SerializationHelper.readAll(Classifier.class.getResourceAsStream(MODEL_FILE2));
+			classifier2 = (ClassificationViaClustering) o2[0];
 		} catch (Exception ex) {
 			System.err.println(ex.getMessage());
 			ex.printStackTrace(System.err);
@@ -165,4 +182,22 @@ public class Classifier {
 			ex.printStackTrace(System.err);
 		}
 	}
+
+	public double getPriorNutritious() {
+		return priorNutritious;
+	}
+
+	public void setPriorNutritious(double priorNutritious) {
+		this.priorNutritious = priorNutritious;
+	}
+
+	public double getPriorPoisonous() {
+		return priorPoisonous;
+	}
+
+	public void setPriorPoisonous(double priorPoisonous) {
+		this.priorPoisonous = priorPoisonous;
+	}
+
+	
 }

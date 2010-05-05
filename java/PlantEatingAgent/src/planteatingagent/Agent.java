@@ -22,6 +22,18 @@ public class Agent {
         dos = new DataOutputStream(os);
     }
 
+	void move(MoveType move) throws Exception {
+		if (move.equals(MoveType.MOVE_DOWN)) {
+			moveDown();
+		} else if (move.equals(MoveType.MOVE_UP)) {
+			moveUp();
+		} else if (move.equals(MoveType.MOVE_RIGHT)) {
+			moveRight();
+		} else if (move.equals(MoveType.MOVE_LEFT)) {
+			moveLeft();
+		}
+	}
+
     private boolean write_and_read_bool(Command command) throws Exception {
         return write_and_read_int(command) == 1 ? true : false;
     }

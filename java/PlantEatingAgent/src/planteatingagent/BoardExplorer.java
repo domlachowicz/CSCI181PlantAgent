@@ -76,105 +76,24 @@ public class BoardExplorer {
 
 	}
 
+	private static class NonSamplingPolicy implements Policy {
+
+		public PlantType classify(Agent agent, Classifier classifier) throws Exception {
+			double positiveUtility = classifier.getPriorNutritious()*agent.getPlantBonus();
+			double negativeUtility = classifier.getPriorPoisonous()*agent.getPlantPenalty();
+			return getPlantTypeBasedOnUtility(positiveUtility-negativeUtility);
+		}
+	}
 
     private static int BOARD_SIZE = 1000;
 
     public static void main(String[] args) {
 		Policy policy = new SimplePolicy();
+		List<Point> pointsVisited = new ArrayList<Point>();
+		List<MoveType> moves = new ArrayList<MoveType>();
 		int port = 2000;
-		boolean explore = false;
 		if (args.length > 0) {
 			port = Integer.parseInt(args[0]);
-			if (args.length > 1) {
-				if (args[1].equals("-explore")) {
-					explore = true;
-				}
-			}
-		}
-		if (explore) {
-			doExplore(port);
-		} else {
-			Classifier classifier = new Classifier();
-			classifier.readFromDisk();
-
-			try {
-				String server = "localhost";
-
-				Agent agent = new Agent(server, port);
-				Random r = new Random();
-
-				int my_key = r.nextInt();
-
-				int radius = 1;
-				int left, right, down, up;
-
-				left = right = down = up = radius;
-				PlantType lastSquare = PlantType.UNKNOWN_SQUARE;
-
-				while (agent.isAlive()) {
-
-					PlantType plantType = agent.getPlantType();
-					if (PlantType.UNKNOWN_PLANT == plantType) {
-						if (lastSquare.equals(PlantType.NUTRITIOUS_PLANT)) {
-							policy = new NonSamplingPolicyNutritious();
-						} else if (lastSquare.equals(PlantType.POISONOUS_PLANT)) {
-							policy = new NonSamplingPolicyPoisonous();
-						} else {
-							policy = new SimplePolicy();
-						}
-						PlantType classifiedObservation = policy.classify(agent, classifier);
-						if (classifiedObservation == PlantType.NUTRITIOUS_PLANT) {
-							PlantEatingResult eatenPlant = agent.eatPlant();
-							switch (eatenPlant) {
-								case EAT_NUTRITIOUS_PLANT:
-									lastSquare = PlantType.NUTRITIOUS_PLANT;
-									break;
-
-								case EAT_POISONOUS_PLANT:
-									lastSquare = PlantType.POISONOUS_PLANT;
-									break;
-							}
-						} else {
-							lastSquare = PlantType.POISONOUS_PLANT;
-						}
-					} else {
-						lastSquare = plantType;
-					}
-
-					// attempt to move in concentric circles
-					if (left > 0) {
-						agent.moveLeft();
-						left--;
-					} else if (down > 0) {
-						agent.moveDown();
-						down--;
-					} else if (right > 0) {
-						agent.moveRight();
-						right--;
-					} else if (up > 0) {
-						agent.moveUp();
-						up--;
-					} else {
-						radius++;
-						left = right = down = up = radius;
-					}
-				}
-			} catch (Throwable t) {
-				System.err.println(t.getMessage());
-				t.printStackTrace(System.err);
-			}
-		}
-    }
-
-	public static void doExplore(int port) {
-		List<Image> images = new ArrayList<Image>();
-		PrintStream board_map_file = null;
-		PrintStream image_classifications_file = null;
-		char[][] board = new char[BOARD_SIZE][BOARD_SIZE];
-		for (int x = 0; x < BOARD_SIZE; x++) {
-			for (int y = 0; y < BOARD_SIZE; y++) {
-				board[x][y] = 'X';
-			}
 		}
 		Classifier classifier = new Classifier();
 		classifier.readFromDisk();
@@ -183,67 +102,63 @@ public class BoardExplorer {
 			String server = "localhost";
 
 			Agent agent = new Agent(server, port);
-			Random r = new Random();
-
-			int my_key = r.nextInt();
-
-			board_map_file = new PrintStream(new FileOutputStream(String.format("board_map_%d.txt", my_key)));
-			image_classifications_file = new PrintStream(new FileOutputStream(String.format("image_classifications_%d.arff", my_key)));
 			int radius = 1;
 			int left, right, down, up;
 
 			left = right = down = up = radius;
+			PlantType lastSquare = PlantType.UNKNOWN_SQUARE;
 
 			while (agent.isAlive()) {
-				int x = agent.getX() + (BOARD_SIZE / 2);
-				int y = agent.getY() + (BOARD_SIZE / 2);
-
 				PlantType plantType = agent.getPlantType();
+				Point point = new Point(agent.getX(), agent.getY(), plantType);
+				pointsVisited.add(point);
 				if (PlantType.UNKNOWN_PLANT == plantType) {
-					Image image1 = agent.getPlantImage();
-					PlantType type1 = classifier.classifyInstance(image1.toInstance(classifier.getDataSet()));
-					Image image2 = agent.getPlantImage();
-					PlantType type2 = classifier.classifyInstance(image2.toInstance(classifier.getDataSet()));
-					/*int[][] jointImage = new int[Image.IMAGE_SIZE][Image.IMAGE_SIZE];
-					for (int i = 0; i < Image.IMAGE_SIZE; i++) {
-						for (int j = 0; j < Image.IMAGE_SIZE; j++) {
-							jointImage[i][j] = image1.getImage()[i][j] | image2.getImage()[i][j];
+					Policy tempPolicy = new NonSamplingPolicy();
+					if (tempPolicy.classify(agent, classifier).equals(PlantType.NUTRITIOUS_PLANT)) {
+						policy = tempPolicy;
+					} else if (lastSquare.equals(PlantType.NUTRITIOUS_PLANT)) {
+						policy = new NonSamplingPolicyNutritious();
+					} else if (lastSquare.equals(PlantType.POISONOUS_PLANT)) {
+						policy = new NonSamplingPolicyPoisonous();
+					} else {
+						policy = new SimplePolicy();
+					}
+					PlantType classifiedObservation = policy.classify(agent, classifier);
+					if (classifiedObservation == PlantType.NUTRITIOUS_PLANT) {
+						PlantEatingResult eatenPlant = agent.eatPlant();
+						switch (eatenPlant) {
+							case EAT_NUTRITIOUS_PLANT:
+								lastSquare = PlantType.NUTRITIOUS_PLANT;
+								point.setType(lastSquare);
+								break;
+
+							case EAT_POISONOUS_PLANT:
+								lastSquare = PlantType.POISONOUS_PLANT;
+								point.setType(lastSquare);
+								break;
 						}
+					} else {
+						lastSquare = PlantType.POISONOUS_PLANT;
 					}
-					Image image = new Image(jointImage);
-					images.add(image1);*/
-					PlantEatingResult eatenPlant = agent.eatPlant();
-					switch (eatenPlant) {
-						case EAT_NUTRITIOUS_PLANT:
-							image1.setClassification(PlantType.NUTRITIOUS_PLANT);
-							System.out.println("GOOD - classified plant as nutritious and was nutrious.");
-							break;
-
-						case EAT_POISONOUS_PLANT:
-							image1.setClassification(PlantType.POISONOUS_PLANT);
-							System.out.println("BAD - classified plant as nutritious and was poisonous.");
-							break;
-					}
-				} else if (PlantType.POISONOUS_PLANT == plantType) {
-					board[x][y] = 'P';
-				} else if (PlantType.NUTRITIOUS_PLANT == plantType) {
-					board[x][y] = 'N';
 				} else {
-					board[x][y] = ' ';
+					lastSquare = plantType;
 				}
-
 				// attempt to move in concentric circles
 				if (left > 0) {
 					agent.moveLeft();
+					moves.add(MoveType.MOVE_LEFT);
 					left--;
 				} else if (down > 0) {
 					agent.moveDown();
+					moves.add(MoveType.MOVE_DOWN);
 					down--;
 				} else if (right > 0) {
 					agent.moveRight();
+					moves.add(MoveType.MOVE_RIGHT);
 					right--;
 				} else if (up > 0) {
 					agent.moveUp();
+					moves.add(MoveType.MOVE_UP);
 					up--;
 				} else {
 					radius++;
@@ -253,21 +168,8 @@ public class BoardExplorer {
 		} catch (Throwable t) {
 			System.err.println(t.getMessage());
 			t.printStackTrace(System.err);
-		} finally {
-			ImageArffWriter.writeArffFile(images, image_classifications_file);
-
-			image_classifications_file.close();
-
-			for (int x = 0; x < BOARD_SIZE; x++) {
-				for (int y = 0; y < BOARD_SIZE; y++) {
-					board_map_file.append(board[x][y]);
-				}
-				board_map_file.println();
-			}
-
-			board_map_file.close();
 		}
-	}
+    }
 
 	public static double expectedUtility(Agent agent, Classifier classifier, Instance i) throws Exception {
 		double positiveUtility = agent.getPlantBonus()*classifier.getDistribution(i, PlantType.NUTRITIOUS_PLANT);
