@@ -2,6 +2,7 @@ package planteatingagent;
 
 import java.util.*;
 import java.io.*;
+import weka.core.Instance;
 
 public class BoardExplorer {
 	private static int MAX_ATTEMPTS = 10;
@@ -10,12 +11,23 @@ public class BoardExplorer {
 		public PlantType classify(Agent agent, Classifier classifier) throws Exception;
 	}
 
-	private static class FiniteMemoryPolicy implements Policy {
+	private static abstract class AbstractPolicy implements Policy {
+		public PlantType classify(Agent agent, Classifier classifier, Image image) throws Exception {
+			if (true) {
+				double utility = BoardExplorer.expectedUtility(agent, classifier, image.toInstance(classifier.getDataSet()));
+				return getPlantTypeBasedOnUtility(utility);
+			} else {
+				return classifier.classifyInstance(image.toInstance(classifier.getDataSet()));
+			}
+		}
+	}
+
+	private static class FiniteMemoryPolicy extends AbstractPolicy {
 		public PlantType classify(Agent agent, Classifier classifier) throws Exception {
 			PlantType lastType = PlantType.UNKNOWN_PLANT;
 			for (int attempts = 0; attempts <= MAX_ATTEMPTS; attempts++) {
 				Image image = agent.getPlantImage();
-				PlantType type = classifier.classifyInstance(image.toInstance(classifier.getDataSet()));
+				PlantType type = classify(agent, classifier, image);
 				if (type.equals(lastType)) {
 					return type;
 				}
@@ -25,12 +37,12 @@ public class BoardExplorer {
 		}
 	}
 
-	private static class FiniteStateControllerPolicy implements Policy {
+	private static class FiniteStateControllerPolicy extends AbstractPolicy {
 		public PlantType classify(Agent agent, Classifier classifier) throws Exception {
 			int sum = 0;
 			for (int attempts = 0; attempts <= MAX_ATTEMPTS; attempts++) {
 				Image image = agent.getPlantImage();
-				PlantType type = classifier.classifyInstance(image.toInstance(classifier.getDataSet()));
+				PlantType type = classify(agent, classifier, image);
 				if (type.equals(PlantType.POISONOUS_PLANT))
 					sum--;
 				else if (type.equals(PlantType.NUTRITIOUS_PLANT))
@@ -42,10 +54,33 @@ public class BoardExplorer {
 		}
 	}
 
+	private static class SimplePolicy extends AbstractPolicy {
+		public PlantType classify(Agent agent, Classifier classifier) throws Exception {
+			return classify(agent, classifier, agent.getPlantImage());
+		}
+	}
+
+	private static class NonSamplingPolicyNutritious implements Policy {
+
+		public PlantType classify(Agent agent, Classifier classifier) throws Exception {
+			return PlantType.NUTRITIOUS_PLANT;
+		}
+
+	}
+
+	private static class NonSamplingPolicyPoisonous implements Policy {
+
+		public PlantType classify(Agent agent, Classifier classifier) throws Exception {
+			return PlantType.POISONOUS_PLANT;
+		}
+
+	}
+
+
     private static int BOARD_SIZE = 1000;
 
     public static void main(String[] args) {
-		Policy policy = new FiniteStateControllerPolicy();
+		Policy policy = new SimplePolicy();
 		int port = 2000;
 		boolean explore = false;
 		if (args.length > 0) {
@@ -74,26 +109,36 @@ public class BoardExplorer {
 				int left, right, down, up;
 
 				left = right = down = up = radius;
+				PlantType lastSquare = PlantType.UNKNOWN_SQUARE;
 
 				while (agent.isAlive()) {
-					int x = agent.getX() + (BOARD_SIZE / 2);
-					int y = agent.getY() + (BOARD_SIZE / 2);
 
 					PlantType plantType = agent.getPlantType();
 					if (PlantType.UNKNOWN_PLANT == plantType) {
+						if (lastSquare.equals(PlantType.NUTRITIOUS_PLANT)) {
+							policy = new NonSamplingPolicyNutritious();
+						} else if (lastSquare.equals(PlantType.POISONOUS_PLANT)) {
+							policy = new NonSamplingPolicyPoisonous();
+						} else {
+							policy = new SimplePolicy();
+						}
 						PlantType classifiedObservation = policy.classify(agent, classifier);
 						if (classifiedObservation == PlantType.NUTRITIOUS_PLANT) {
 							PlantEatingResult eatenPlant = agent.eatPlant();
 							switch (eatenPlant) {
 								case EAT_NUTRITIOUS_PLANT:
-									System.out.println("GOOD - classified plant as nutritious and was nutrious.");
+									lastSquare = PlantType.NUTRITIOUS_PLANT;
 									break;
 
 								case EAT_POISONOUS_PLANT:
-									System.out.println("BAD - classified plant as nutritious and was poisonous.");
+									lastSquare = PlantType.POISONOUS_PLANT;
 									break;
 							}
+						} else {
+							lastSquare = PlantType.POISONOUS_PLANT;
 						}
+					} else {
+						lastSquare = plantType;
 					}
 
 					// attempt to move in concentric circles
@@ -223,4 +268,19 @@ public class BoardExplorer {
 			board_map_file.close();
 		}
 	}
+
+	public static double expectedUtility(Agent agent, Classifier classifier, Instance i) throws Exception {
+		double positiveUtility = agent.getPlantBonus()*classifier.getDistribution(i, PlantType.NUTRITIOUS_PLANT);
+		double negativeUtility = agent.getPlantPenalty()*classifier.getDistribution(i, PlantType.POISONOUS_PLANT);
+		return positiveUtility - negativeUtility;
+	}
+
+	public static PlantType getPlantTypeBasedOnUtility(double utility) {
+		if (utility > 0) {
+			return PlantType.NUTRITIOUS_PLANT;
+		} else {
+			return PlantType.POISONOUS_PLANT;
+		}
+	}
+
 }
